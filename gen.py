@@ -91,7 +91,7 @@ class Int(Var):
         Var.__init__(self, type=Int)
         match args:
             case [int(const)]:
-                ir.ir.ops.append(ConstInt(self.id, const))
+                ir.ir.ops.append(Const(self.id, const, Int))
             case _:
                 raise Exception("Could not construct int")
 
@@ -101,7 +101,7 @@ class Float(Var):
         Var.__init__(self, type=Float)
         match args:
             case [float(const)]:
-                ir.ir.ops.append(ConstInt(self.id, const))
+                ir.ir.ops.append(Const(self.id, const, Float))
             case _:
                 raise Exception("Could not construct int")
 
@@ -124,7 +124,7 @@ class FloatArray(Array):
         Array.__init__(self, type=FloatArray, subtype=Float)
         match args:
             case [list(const)]:  # TODO: Diffrent types of arrays
-                ir.ir.ops.append(ConstFloatArray(self.id, const))
+                ir.ir.ops.append(Const(self.id, const, FloatArray))
             case _:
                 raise Exception("Could not construct int")
 
@@ -134,21 +134,31 @@ class IntArray(Array):
         Array.__init__(self, type=IntArray, subtype=Int)
         match args:
             case [list(const)]:  # TODO: Diffrent types of arrays
-                ir.ir.ops.append(ConstFloatArray(self.id, const))
+                ir.ir.ops.append(Const(self.id, const, FloatArray))
             case _:
                 raise Exception("Could not construct int")
 
 
 class Fn:
     args: list[type]
+    op: Id
 
     def __init__(self, fn):
+        self.op = ir.Id(len(ir.ir.ops))
+        ir.ir.ops.append(ir.FnBegin(""))
         sig = signature(fn)
+        args = []
         for name, param in sig.parameters.items():
-            print(f"{param.annotation=}")
+            type = param.annotation
+            args.append(Var(type=type))
+            ir.ir.ops.append(ir.Arg(args[-1].id, type=type))
+
+        fn(*args)
+
+        ir.ir.ops.append(ir.FnEnd(""))
 
     def __call__(self, *args):
-        pass
+        ir.ir.ops.append(ir.FnCall(self.op, [arg.id for arg in args]))
 
 
 def fn(name: str, f: Callable):

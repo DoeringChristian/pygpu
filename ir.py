@@ -36,6 +36,13 @@ class GetItem:
 
 
 @dataclass
+class Const:
+    dst: Id
+    val: float
+    type: type
+
+
+@dataclass
 class ConstFloat:
     dst: Id
     val: float
@@ -54,6 +61,12 @@ class ConstInt:
 
 
 @dataclass
+class Arg:
+    dst: Id
+    type: type
+
+
+@dataclass
 class Load:
     dst: Id
     set: int
@@ -68,6 +81,12 @@ class FnBegin:
 @dataclass
 class FnEnd:
     name: str
+
+
+@dataclass
+class FnCall:
+    op: Id
+    vars: list[Id]
 
 
 class Ir:
