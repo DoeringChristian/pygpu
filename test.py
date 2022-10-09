@@ -1,8 +1,9 @@
 from ir import ir, VarType
-from gen import Var, Fn, Int, Float, FloatArray
+from gen import Var, Fn, Int, Float, FloatArray, precomp
 import glsl
 
 
+@precomp
 def test(x: Int):
     pass
 
@@ -15,7 +16,6 @@ if __name__ == "__main__":
 
     z = Var(type=VarType.FLOAT_ARRAY, set=0, binding=0)
 
-    main = Fn(test)
     print(f"{ir=}")
 
     glsl.compile_to_glsl(ir)

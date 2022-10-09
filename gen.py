@@ -161,7 +161,5 @@ class Fn:
         ir.ir.ops.append(ir.FnCall(self.op, [arg.id for arg in args]))
 
 
-def fn(name: str, f: Callable):
-    ir.ir.ops.append(ir.FnBegin(name))
-    f()
-    ir.ir.ops.append(ir.FnEnd(name))
+def precomp(fn: Callable) -> Callable:
+    return Fn(fn)
