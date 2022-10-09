@@ -16,6 +16,4 @@ if __name__ == "__main__":
 
     z = Var(type=VarType.FLOAT_ARRAY, set=0, binding=0)
 
-    print(f"{ir=}")
-
     glsl.compile_to_glsl(ir)

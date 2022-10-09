@@ -145,7 +145,7 @@ class Fn:
 
     def __init__(self, fn):
         self.op = ir.Id(len(ir.ir.ops))
-        ir.ir.ops.append(ir.FnBegin(""))
+        ir.ir.ops.append(ir.FnBegin())
         sig = signature(fn)
         args = []
         for name, param in sig.parameters.items():
@@ -153,9 +153,11 @@ class Fn:
             args.append(Var(type=type))
             ir.ir.ops.append(ir.Arg(args[-1].id, type=type))
 
+        ir.ir.ops.append(ir.FnBody())
+
         fn(*args)
 
-        ir.ir.ops.append(ir.FnEnd(""))
+        ir.ir.ops.append(ir.FnEnd())
 
     def __call__(self, *args):
         ir.ir.ops.append(ir.FnCall(self.op, [arg.id for arg in args]))

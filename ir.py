@@ -75,12 +75,17 @@ class Load:
 
 @dataclass
 class FnBegin:
-    name: str
+    pass
 
 
 @dataclass
 class FnEnd:
-    name: str
+    pass
+
+
+@dataclass
+class FnBody:
+    pass
 
 
 @dataclass
