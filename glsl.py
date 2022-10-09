@@ -91,8 +91,10 @@ def compile_to_glsl(src: ir.Ir) -> str:
             case ir.Load(dst, set, binding):
                 glsl += indent()
                 glsl += glsl_load(dst, set, binding)
-            case ir.FnCall(op, vars):
+            case ir.FnCall(op, vars, ret):
                 glsl += indent()
+                if ret is not None:
+                    glsl += f"var{ret.idx} = "
                 glsl += f"fn{op.idx}("
                 for var in vars:
                     glsl += f"var{var.idx}, "

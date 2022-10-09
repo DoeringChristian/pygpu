@@ -1,5 +1,5 @@
 
-from typing import overload, Callable
+from typing import overload, Callable, Optional
 from ir import Id, Ir
 from ir import *
 import ir
@@ -138,6 +138,7 @@ class IntArray(Array):
 class Fn:
     args: list[type]
     op: Id
+    ret: Optional[Id]
 
     def __init__(self, fn):
         self.op = ir.Id(len(ir.ir.ops))
@@ -151,12 +152,19 @@ class Fn:
 
         ir.ir.ops.append(ir.FnBody())
 
-        fn(*args)
+        self.ret = fn(*args)
 
         ir.ir.ops.append(ir.FnEnd())
 
-    def __call__(self, *args):
-        ir.ir.ops.append(ir.FnCall(self.op, [arg.id for arg in args]))
+    def __call__(self, *args) -> Optional[Var]:
+        ret = None
+        id = None
+        if self.ret is not None:
+            ret = Var(type=self.ret.type)
+            id = ret.id
+        ir.ir.ops.append(
+            ir.FnCall(self.op, [arg.id for arg in args], id))
+        return ret
 
 
 def precomp(fn: Callable) -> Callable:

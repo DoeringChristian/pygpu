@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from copy import copy
 from enum import Enum
+from typing import Optional
 
 
 @dataclass
@@ -65,6 +66,7 @@ class FnBody:
 class FnCall:
     op: Id
     vars: list[Id]
+    ret: Optional[Id]
 
 
 class Ir:

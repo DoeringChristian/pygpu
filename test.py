@@ -11,13 +11,13 @@ def test(x: Int):
     x = arr[Int(0)]
     y = x + arr[Int(1)]
     y += arr[Int(2)]
-    pass
+    return y
 
 
 if __name__ == "__main__":
     # print(f"{ir=}")
 
     x = Int(1)
-    test(x)
+    y = test(x)
 
     glsl.compile_to_glsl(ir)
