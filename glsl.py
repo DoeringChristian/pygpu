@@ -91,5 +91,12 @@ def compile_to_glsl(src: ir.Ir) -> str:
             case ir.Load(dst, set, binding):
                 glsl += indent()
                 glsl += glsl_load(dst, set, binding)
+            case ir.FnCall(op, vars):
+                glsl += indent()
+                glsl += f"fn{op.idx}("
+                for var in vars:
+                    glsl += f"var{var.idx}, "
+                glsl = glsl[:-2]  # TODO: find better way to remove comma
+                glsl += ");"
 
     print(glsl)

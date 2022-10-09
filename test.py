@@ -17,4 +17,7 @@ def test(x: Int):
 if __name__ == "__main__":
     # print(f"{ir=}")
 
+    x = Int(1)
+    test(x)
+
     glsl.compile_to_glsl(ir)
