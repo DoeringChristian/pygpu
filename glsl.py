@@ -1,4 +1,14 @@
 import ir
+import gen
+
+
+def glsl_type(type: type) -> str:
+    if type == gen.Float:
+        return "float"
+    elif type == gen.Int:
+        return "int"
+    else:
+        raise Exception("Type not supported")
 
 
 def compile_to_glsl(src: ir.Ir) -> str:
@@ -16,7 +26,7 @@ def compile_to_glsl(src: ir.Ir) -> str:
             case ir.FnEnd():
                 glsl += "}\n"
             case ir.Arg(dst, type):
-                pass
+                glsl += glsl_type(type) + f" var{dst.idx}, "
             case ir.Const(dst, val, type):
                 pass
 

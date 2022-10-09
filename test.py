@@ -5,6 +5,7 @@ import glsl
 
 @precomp
 def test(x: Int):
+    a = x + Int(10)
     pass
 
 
