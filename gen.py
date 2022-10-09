@@ -1,7 +1,9 @@
 
-from typing import overload
-from ir import Id, Ir, ir, VarType
+from typing import overload, Callable
+from ir import Id, Ir, VarType
 from ir import *
+import ir
+from inspect import signature
 
 
 class Var:
@@ -9,7 +11,7 @@ class Var:
 
     @property
     def type(self) -> VarType:
-        return ir.types[self.id.idx]
+        return ir.ir.vars[self.id.idx]
 
     @overload
     def __init__(self, const: int):
@@ -23,27 +25,15 @@ class Var:
     def __init__(self, type: VarType, set: int, binding: int):
         pass
 
-    def __init__(self, *args, **kwargs):
-        print(f"{args=}")
-        match args:
-            case [int(const)]:
-                self.__init__(type=VarType.INT)
-                ir.ops.append(ConstInt(self.id, const))
-            case [float(const)]:
-                self.__init__(type=VarType.FLOAT)
-                ir.ops.append(ConstFloat(self.id, const))
-            case [list(const)]:  # TODO: Diffrent types of arrays
-                self.__init__(type=VarType.FLOAT_ARRAY)
-                ir.ops.append(ConstFloatArray(self.id, const))
+    def __init__(self, **kwargs):
+        match kwargs:
+            case {'type': type}:
+                self.id = ir.ir.alloc(type)
+            case {'type': type, 'set': set, 'binding': binding}:
+                self.__init__(type=type)
+                ir.ops.append(Load(self.id, set, binding))
             case _:
-                match kwargs:
-                    case {'type': type}:
-                        self.id = ir.alloc(type)
-                    case {'type': type, 'set': set, 'binding': binding}:
-                        self.__init__(type=type)
-                        ir.ops.append(Load(self.id, set, binding))
-                    case _:
-                        raise Exception("Error valid no argument provided")
+                raise Exception("Error valid no argument provided")
 
     @overload
     def __iadd__(self, other: 'Var'):
@@ -59,9 +49,10 @@ class Var:
 
     def __iadd__(self, other):
         if isinstance(other, Var):
-            ir.ops.append(IAdd(self.id, other.id))
+            ir.ir.ops.append(IAdd(self.id, other.id))
             return self
         else:
+            raise Exception("Should index with jit variables")
             self += Var(other)
             return self
 
@@ -80,9 +71,10 @@ class Var:
     def __add__(self, other):
         if isinstance(other, Var):
             dst = Var(type=self.type)
-            ir.ops.append(Add(self.id, other.id, dst.id))
+            ir.ir.ops.append(Add(self.id, other.id, dst.id))
             return dst
         else:
+            raise Exception("Should index with jit variables")
             other = Var(other)
             return self + other
 
@@ -90,24 +82,76 @@ class Var:
     def __getitem__(self, key: int) -> 'Var':
         pass
 
-    def __getitem__(self, key) -> 'Var':
-        print(f"{key=}")
-        if isinstance(key, Var) and key.type == VarType.INT:
-            match self.type:
-                case VarType.FLOAT_ARRAY:
-                    dst = Var(type=VarType.FLOAT)
-                    ir.ops.append(GetItem(self.id, dst.id, key.id))
-                    return dst
-                case VarType.INT_ARRAY:
-                    dst = Var(type=VarType.INT)
-                    ir.ops.append(GetItem(self.id, dst.id, key.id))
-                    return dst
-                case _:
-                    raise Exception("This type is not indexable")
-        elif isinstance(key, int):
-            return self[Var(key)]
-        else:
-            raise Exception("An Array cannot be indexed with this type")
-
     def __repr__(self):
         return f"Var({self.id=}, {self.type=})"
+
+
+class Int(Var):
+    def __init__(self, *args):
+        Var.__init__(self, type=Int)
+        match args:
+            case [int(const)]:
+                ir.ir.ops.append(ConstInt(self.id, const))
+            case _:
+                raise Exception("Could not construct int")
+
+
+class Float(Var):
+    def __init__(self, *args):
+        Var.__init__(self, type=Float)
+        match args:
+            case [float(const)]:
+                ir.ir.ops.append(ConstInt(self.id, const))
+            case _:
+                raise Exception("Could not construct int")
+
+
+class Array(Var):
+    subtype: type
+
+    def __init__(self, **kwargs):
+        self.subtype = kwargs['subtype']
+        Var.__init__(self, type=kwargs['type'])
+
+    def __getitem__(self, key) -> 'Var':
+        dst = Var(type=self.subtype)
+        ir.ir.ops.append(GetItem(self.id, dst.id, key.id))
+        return dst
+
+
+class FloatArray(Array):
+    def __init__(self, *args):
+        Array.__init__(self, type=FloatArray, subtype=Float)
+        match args:
+            case [list(const)]:  # TODO: Diffrent types of arrays
+                ir.ir.ops.append(ConstFloatArray(self.id, const))
+            case _:
+                raise Exception("Could not construct int")
+
+
+class IntArray(Array):
+    def __init__(self, *args):
+        Array.__init__(self, type=IntArray, subtype=Int)
+        match args:
+            case [list(const)]:  # TODO: Diffrent types of arrays
+                ir.ir.ops.append(ConstFloatArray(self.id, const))
+            case _:
+                raise Exception("Could not construct int")
+
+
+class Fn:
+    args: list[type]
+
+    def __init__(self, fn):
+        sig = signature(fn)
+        for name, param in sig.parameters.items():
+            print(f"{param.annotation=}")
+
+    def __call__(self, *args):
+        pass
+
+
+def fn(name: str, f: Callable):
+    ir.ir.ops.append(ir.FnBegin(name))
+    f()
+    ir.ir.ops.append(ir.FnEnd(name))

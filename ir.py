@@ -60,20 +60,27 @@ class Load:
     binding: int
 
 
+@dataclass
+class FnBegin:
+    name: str
+
+
+@dataclass
+class FnEnd:
+    name: str
+
+
 class Ir:
     ops = []
-    types = []
-    next: Id = Id(0)
+    vars = []
 
-    def alloc(self, type: VarType) -> Id:
-        if not isinstance(type, VarType):
-            raise Exception("Allocation needs var type")
-        ret = Id(len(self.types))
-        self.types.append(type)
+    def alloc(self, type: type) -> Id:
+        ret = Id(len(self.vars))
+        self.vars.append(type)
         return ret
 
     def __repr__(self):
-        rep = f"Ir({self.ops=}, {self.types=})"
+        rep = f"Ir({self.ops=}, {self.vars=})"
         return rep
 
 
