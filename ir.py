@@ -8,13 +8,6 @@ class Id:
     idx: int
 
 
-class VarType(Enum):
-    INT = 0
-    FLOAT = 1
-    FLOAT_ARRAY = 2
-    INT_ARRAY = 3
-
-
 @dataclass
 class Add:
     lhs: Id
@@ -39,31 +32,11 @@ class GetItem:
 class Const:
     dst: Id
     val: float
-    type: type
-
-
-@dataclass
-class ConstFloat:
-    dst: Id
-    val: float
-
-
-@dataclass
-class ConstFloatArray:
-    dst: Id
-    val: []
-
-
-@dataclass
-class ConstInt:
-    dst: Id
-    val: int
 
 
 @dataclass
 class Arg:
     dst: Id
-    type: type
 
 
 @dataclass
@@ -106,6 +79,10 @@ class Ir:
     def __repr__(self):
         rep = f"Ir({self.ops=}, {self.vars=})"
         return rep
+
+    def type(self, id: Id) -> type:
+        print(f"{self.vars[id.idx]}")
+        return self.vars[id.idx]
 
 
 ir = Ir()

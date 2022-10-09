@@ -1,6 +1,6 @@
 
 from typing import overload, Callable
-from ir import Id, Ir, VarType
+from ir import Id, Ir
 from ir import *
 import ir
 from inspect import signature
@@ -10,7 +10,7 @@ class Var:
     id: Id
 
     @property
-    def type(self) -> VarType:
+    def type(self) -> type:
         return ir.ir.vars[self.id.idx]
 
     @overload
@@ -21,19 +21,18 @@ class Var:
     def __init__(self, const: float):
         pass
 
-    @overload
-    def __init__(self, type: VarType, set: int, binding: int):
-        pass
-
-    def __init__(self, **kwargs):
-        match kwargs:
-            case {'type': type}:
+    def __init__(self, *args, **kwargs):
+        match (args, kwargs):
+            case ([], {'type': type, 'set': set, 'binding': binding}):
                 self.id = ir.ir.alloc(type)
-            case {'type': type, 'set': set, 'binding': binding}:
-                self.__init__(type=type)
-                ir.ops.append(Load(self.id, set, binding))
+                ir.ir.ops.append(ir.Load(self.id, set, binding))
+            case ([], {'type': type}):
+                self.id = ir.ir.alloc(type)
+            case ([const], {'type': type}):
+                self.id = ir.ir.alloc(type)
+                ir.ir.ops.append(ir.Const(self.id, const))
             case _:
-                raise Exception("Error valid no argument provided")
+                raise Exception("Error invallid arguments")
 
     @overload
     def __iadd__(self, other: 'Var'):
@@ -85,33 +84,36 @@ class Var:
     def __repr__(self):
         return f"Var({self.id=}, {self.type=})"
 
+    def init_const(self, *args, **kwargs):
+        match args:
+            case [const]:
+                ir.ir.ops.append(Const(self.id, const))
+            case _:
+                match kwargs:
+                    case {'set': set, 'binding': binding}:
+                        self.__init__(type=type)
+                        ir.ops.append(Load(self.id, set, binding))
+                raise Exception(
+                    f"Could not construct variable of type: {type(self)} with arguments: {args=}, {kwargs=}")
+
 
 class Int(Var):
-    def __init__(self, *args):
-        Var.__init__(self, type=Int)
-        match args:
-            case [int(const)]:
-                ir.ir.ops.append(Const(self.id, const, Int))
-            case _:
-                raise Exception("Could not construct int")
+    def __init__(self, *args, **kwargs):
+        kwargs['type'] = Int
+        Var.__init__(self, *args, **kwargs)
 
 
 class Float(Var):
-    def __init__(self, *args):
-        Var.__init__(self, type=Float)
-        match args:
-            case [float(const)]:
-                ir.ir.ops.append(Const(self.id, const, Float))
-            case _:
-                raise Exception("Could not construct int")
+    def __init__(self, *args, **kwargs):
+        kwargs['type'] = Float
+        Var.__init__(self, *args, **kwargs)
 
 
 class Array(Var):
     subtype: type
 
-    def __init__(self, **kwargs):
-        self.subtype = kwargs['subtype']
-        Var.__init__(self, type=kwargs['type'])
+    def __init__(self, *args, **kwargs):
+        Var.__init__(self, *args, **kwargs)
 
     def __getitem__(self, key) -> 'Var':
         dst = Var(type=self.subtype)
@@ -120,23 +122,17 @@ class Array(Var):
 
 
 class FloatArray(Array):
-    def __init__(self, *args):
-        Array.__init__(self, type=FloatArray, subtype=Float)
-        match args:
-            case [list(const)]:  # TODO: Diffrent types of arrays
-                ir.ir.ops.append(Const(self.id, const, FloatArray))
-            case _:
-                raise Exception("Could not construct int")
+    def __init__(self, *args, **kwargs):
+        self.subtype = Float
+        kwargs['type'] = FloatArray
+        Array.__init__(self, *args, **kwargs)
 
 
 class IntArray(Array):
-    def __init__(self, *args):
-        Array.__init__(self, type=IntArray, subtype=Int)
-        match args:
-            case [list(const)]:  # TODO: Diffrent types of arrays
-                ir.ir.ops.append(Const(self.id, const, FloatArray))
-            case _:
-                raise Exception("Could not construct int")
+    def __init__(self, *args, **kwargs):
+        self.subtype = Int
+        kwargs['type'] = IntArray
+        Array.__init__(self, *args, **kwargs)
 
 
 class Fn:
@@ -151,7 +147,7 @@ class Fn:
         for name, param in sig.parameters.items():
             type = param.annotation
             args.append(Var(type=type))
-            ir.ir.ops.append(ir.Arg(args[-1].id, type=type))
+            ir.ir.ops.append(ir.Arg(args[-1].id))
 
         ir.ir.ops.append(ir.FnBody())
 
